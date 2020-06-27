@@ -1,4 +1,6 @@
 const argv = require("yargs").argv;
+const express = require('express')
+const PORT = 3000;
 
 const {
   listContacts,
@@ -6,6 +8,7 @@ const {
   removeContact,
   addContact,
 } = require("./contacts.js");
+const { require } = require("yargs");
 
 function invokeAction({ action, id, name, email, phone }) {
   switch (action) {
@@ -31,3 +34,15 @@ function invokeAction({ action, id, name, email, phone }) {
 }
 
 invokeAction(argv);
+
+const app = express();
+
+app.use(express.json());
+
+app.post("/api/contacts", (req, res, next) => {
+  console.log(reg.body);
+})
+
+app.listen(PORT, () => {
+  console.log('server started listening on port', PORT);
+})
