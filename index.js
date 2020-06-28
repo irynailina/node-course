@@ -1,5 +1,8 @@
 const argv = require("yargs").argv;
-const express = require('express')
+const express = require("express");
+const Joi = require("@hapi/joi");
+const uuid = require("uuid");
+const morgan = require('morgan')
 const PORT = 3000;
 
 const {
@@ -8,7 +11,7 @@ const {
   removeContact,
   addContact,
 } = require("./contacts.js");
-const { require } = require("yargs");
+// const { require } = require("yargs");
 
 function invokeAction({ action, id, name, email, phone }) {
   switch (action) {
@@ -35,14 +38,37 @@ function invokeAction({ action, id, name, email, phone }) {
 
 invokeAction(argv);
 
+// ===================================
+
 const app = express();
 
 app.use(express.json());
+app.use(morgan('tiny'))
 
-app.post("/api/contacts", (req, res, next) => {
-  console.log(reg.body);
-})
+function validateCreateUser(req, res, next) {
+  const userSchema = Joi.object({
+    name: Joi.string().required(),
+    email: Joi.string().required(),
+    phone: Joi.string().required(),
+  });
+
+  const result = userSchema.validate(req.body);
+  if (result.error) {
+    return res.status(400).json(result.error);
+  }
+  next();
+}
+
+app.post("/contacts", validateCreateUser, (req, res, next) => {
+ const id = uuid.v4();
+ 
+  console.log(id);
+  return res.send("hello");
+});
 
 app.listen(PORT, () => {
-  console.log('server started listening on port', PORT);
-})
+  console.log("Server started listening on port", PORT);
+});
+
+
+app.get('/contacts', listContacts)
