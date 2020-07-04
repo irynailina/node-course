@@ -39,7 +39,7 @@ module.exports = class ContactsServer {
   }
 
   initRoutes() {
-    this.server.use("/", contactRouter);
+    this.server.use("/contacts", contactRouter);
   }
 
   startListening() {

@@ -1,8 +1,10 @@
-const path = require("path");
-const contacts = require(path.join(__dirname, "../../db/contacts.json"));
 const Joi = require("@hapi/joi");
-const uuid = require("uuid");
 const { MongoClient, ObjectID } = require("mongodb");
+const contactModel = require("./contacts.model");
+const {
+  Types: { ObjectId },
+} = require("mongoose");
+
 const url =
   "mongodb://irynailina:ilina5808@hw3-mongodb-shard-00-00.f5ejk.mongodb.net:27017,hw3-mongodb-shard-00-01.f5ejk.mongodb.net:27017,hw3-mongodb-shard-00-02.f5ejk.mongodb.net:27017/<db-contacts>?ssl=true&replicaSet=atlas-11f0o4-shard-0&authSource=admin&retryWrites=true&w=majority";
 const dbName = "db-contacts";
@@ -19,40 +21,19 @@ async function main() {
 main();
 
 class ContactController {
-  get getById() {
-    return this._getById.bind(this);
-  }
-
-  get addContact() {
-    return this._addContact.bind(this);
-  }
-
-  get updateContact() {
-    return this._updateContact.bind(this);
-  }
-
-  get removeContact() {
-    return this._removeContact.bind(this);
-  }
-
   async listContacts(req, res, next) {
     try {
-      const allContacts = await contactsCollection.find().toArray();
+      const allContacts = await contactModel.find();
       return res.status(200).json(allContacts);
     } catch (err) {
       next(err);
     }
   }
 
-  async _getById(req, res, next) {
+  async getById(req, res, next) {
     try {
       const id = req.params.id;
-      if (!ObjectID.isValid(id)) {
-        return res.status(404).send("Not found");
-      }
-      const targetContact = await contactsCollection.findOne({
-        _id: new ObjectID(id),
-      });
+      const targetContact = await contactModel.findById(id);
       if (!targetContact) {
         return res.status(404).send("Contact not found");
       }
@@ -62,10 +43,10 @@ class ContactController {
     }
   }
 
-  async _addContact(req, res, next) {
+  async addContact(req, res, next) {
     try {
-      const newContact = await contactsCollection.insert(req.body);
-      return res.status(201).json(newContact.ops);
+      const newContact = await contactModel.create(req.body);
+      return res.status(201).json(newContact);
     } catch (err) {
       next(err);
     }
@@ -85,21 +66,14 @@ class ContactController {
     next();
   }
 
-  async _updateContact(req, res, next) {
+  async updateContact(req, res, next) {
     try {
       const id = req.params.id;
-      if (!ObjectID.isValid(id)) {
-        return res.status(404).send("contact not found");
-      }
-      const updateContact = await contactsCollection.updateOne(
-        {
-          _id: new ObjectID(id),
-        },
-        {
-          $set: req.body,
-        }
+      const updateContact = await contactModel.findContactByIdAndUpdate(
+        id,
+        req.body
       );
-      if (!updateContact.modifiedCount) {
+      if (!updateContact) {
         return res.status(404).send("contact not found");
       }
       console.log(updateContact);
@@ -123,16 +97,11 @@ class ContactController {
     next();
   }
 
-  async _removeContact(req, res, next) {
+  async removeContact(req, res, next) {
     try {
       const id = req.params.id;
-      if (!ObjectID.isValid(id)) {
-        return res.status(404).send("Not found");
-      }
-      const deletedContact = await contactsCollection.deleteOne({
-        _id: new ObjectID(id),
-      });
-      if (!deletedContact.deletedCount) {
+      const deletedContact = await contactModel.findByIdAndDelete(id);
+      if (!deletedContact) {
         return res.status(404).send("contact not found");
       }
       console.log(deletedContact);
@@ -140,6 +109,14 @@ class ContactController {
     } catch (err) {
       next(err);
     }
+  }
+
+  validateId(req, res, next) {
+    const id = req.params.id;
+    if (!ObjectId.isValid(id)) {
+      return res.status(400).send("Not found");
+    }
+    next();
   }
 }
 
