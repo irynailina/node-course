@@ -5,17 +5,20 @@ const {
   Types: { ObjectId },
 } = require("mongoose");
 
-const url =
-  "mongodb://irynailina:ilina5808@hw3-mongodb-shard-00-00.f5ejk.mongodb.net:27017,hw3-mongodb-shard-00-01.f5ejk.mongodb.net:27017,hw3-mongodb-shard-00-02.f5ejk.mongodb.net:27017/<db-contacts>?ssl=true&replicaSet=atlas-11f0o4-shard-0&authSource=admin&retryWrites=true&w=majority";
 const dbName = "db-contacts";
 
 let db, contactsCollection;
 
 async function main() {
-  const client = await MongoClient.connect(url);
-  console.log("Database connection successful");
-  db = client.db(dbName);
-  contactsCollection = db.collection("contacts");
+  try {
+    const client = await MongoClient.connect(process.env.MONGODB_URL);
+    console.log("Database connection successful");
+    db = client.db(dbName);
+    contactsCollection = db.collection("contacts");
+  } catch (error) {
+    console.log("Database start failed", error);
+    process.exit(1);
+  }
 }
 
 main();
@@ -76,7 +79,6 @@ class ContactController {
       if (!updateContact) {
         return res.status(404).send("contact not found");
       }
-      console.log(updateContact);
       return res.status(200).send("contact updated");
     } catch (err) {
       next(err);
@@ -104,7 +106,6 @@ class ContactController {
       if (!deletedContact) {
         return res.status(404).send("contact not found");
       }
-      console.log(deletedContact);
       return res.status(200).send("contact deleted");
     } catch (err) {
       next(err);
