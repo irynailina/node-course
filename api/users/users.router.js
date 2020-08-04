@@ -44,9 +44,6 @@ userRouter.patch(
   upload.single("avatar"),
   compressImage,
   (req, res, next) => {
-    console.log("req.body", req.body);
-    console.log("req.file", req.file);
-    console.log("req.files", req.files);
     if (req.file) {
       return res.status(200).send("hello");
     } else {
