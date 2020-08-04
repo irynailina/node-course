@@ -9,6 +9,7 @@ const bcryptjs = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const { UnauthorizedError } = require("../helpers/errors.constructors");
 const _ = require("lodash");
+const multer = require("multer");
 
 const dbName = "db-contacts";
 
@@ -75,23 +76,33 @@ class UserController {
 
   async _createUser(req, res, next) {
     const { password, name, email } = req.body;
+    const { filename } = req.file;
     const passwordHash = await bcryptjs.hash(password, this._costFactor);
     const user = await userModel.findUserByEmail(email);
     if (user) {
       return res.status(409).json({ message: "Email in use" });
     }
+
     const newUser = await userModel.create({
       name,
       email,
       password: passwordHash,
+      avatarURL: filename,
     });
-    return res.status(201).json({ email: email, subscription: "free" });
+    return res
+      .status(201)
+      .json({
+        email: email,
+        subscription: "free",
+        avatarURL: `${process.env.SERVER_BASE_URL}/${process.env.STATIC_BASE_URL}/${filename}`,
+      });
   }
 
   validateCreateUser(req, res, next) {
     const createUserRules = Joi.object({
       email: Joi.string().required(),
       password: Joi.string().required(),
+      avatarURL: Joi.string(),
     });
 
     const result = createUserRules.validate(req.body);

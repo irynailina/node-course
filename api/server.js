@@ -37,6 +37,7 @@ module.exports = class ContactsServer {
     this.server.use(express.json());
     this.server.use(morgan("tiny"));
     this.server.use(cors({ origin: "http://localhost:3000" }));
+    this.server.use("/images", express.static(process.env.STATIC_BASE_PATH));
   }
 
   initRoutes() {
