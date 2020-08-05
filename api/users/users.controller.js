@@ -52,8 +52,16 @@ class UserController {
 
   async _getUsers(req, res, next) {
     try {
-      const users = await userModel.find();
-      return res.status(200).json(this.prepareUsersResponse(users));
+      const users = userModel.aggregate(
+        {
+          '$project' : {
+            id: "$_id",
+      password: true,
+      token: true
+          }
+        }
+      ) 
+      return res.status(200).json({ email: email, subscription })
     } catch (err) {
       next(err);
     }
@@ -199,16 +207,31 @@ class UserController {
     }
   }
 
-  prepareUsersResponse(users) {
-    return users.map((user) => {
-      const { email, password, subscription, token, _id } = user;
-      return { id: _id, email, subscription };
-    });
-  }
+//  async prepareUsersResponse(users) {
+//   // const users = await userModel.find( { },{ password: 0, token: 0 });
+//     return users.map((user) => {
+//       const { email, password, subscription, token, _id } = user;
+//       return { id: _id, email, subscription };
+//     });
+//   }
 
   async _getCurrentUser(res, req, next) {
-    const [userForResponse] = this.prepareUsersResponse([req.user]);
-    return res.status(200).json({ email: email, subscription: "free" });
+    try {
+      const users = userModel.aggregate(
+        {
+          '$project' : {
+            id: "$_id",
+      password: true,
+      token: true
+          }
+        }
+      ) 
+      return res.status(200).json({ email: email, subscription })
+    } catch (err) {
+      next(err);
+    }
+    // const [userForResponse] = this.prepareUsersResponse([req.user]);
+    // return res.status(200).json({ email: email, subscription: "free" });
   }
 }
 
