@@ -10,6 +10,8 @@ const jwt = require("jsonwebtoken");
 const { UnauthorizedError } = require("../helpers/errors.constructors");
 const _ = require("lodash");
 const multer = require("multer");
+const uuid = require("uuid");
+const { emailingClient } = require("./email.client");
 
 const dbName = "db-contacts";
 
@@ -76,7 +78,6 @@ class UserController {
 
   async _createUser(req, res, next) {
     const { password, name, email } = req.body;
-    const { filename } = req.file;
     const passwordHash = await bcryptjs.hash(password, this._costFactor);
     const user = await userModel.findUserByEmail(email);
     if (user) {
@@ -87,15 +88,15 @@ class UserController {
       name,
       email,
       password: passwordHash,
-      avatarURL: filename,
+      verificationToken: uuid.v4(),
     });
-    return res
-      .status(201)
-      .json({
-        email: email,
-        subscription: "free",
-        avatarURL: `${process.env.SERVER_BASE_URL}/${process.env.STATIC_BASE_URL}/${filename}`,
-      });
+
+    await this.sendVerificationEmail(newUser);
+
+    return res.status(201).json({
+      email: email,
+      subscription: "free",
+    });
   }
 
   validateCreateUser(req, res, next) {
@@ -145,6 +146,10 @@ class UserController {
       const isPasswordValid = await bcryptjs.compare(password, user.password);
       if (!isPasswordValid) {
         return res.status(401).send("Email or password is wrong");
+      }
+
+      if (user.verificationToken) {
+        return res.status(401).send("User is not verified");
       }
 
       const token = await jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
@@ -209,6 +214,28 @@ class UserController {
   async _getCurrentUser(res, req, next) {
     const [userForResponse] = this.prepareUsersResponse([req.user]);
     return res.status(200).json({ email: email, subscription: "free" });
+  }
+
+  async sendVerificationEmail(user) {
+    const { email, verificationToken } = user;
+    const verificationLink = `${process.env.SERVER_BASE_URL}/auth/verify/${verificationToken}`;
+    await emailingClient.sendVerificationEmail(email, verificationLink);
+  }
+
+  async verifyUser(req, res, next) {
+    const { verificationToken } = req.params;
+    const user = await userModel.findOneAndUpdate(
+      {
+        verificationToken,
+      },
+      { verificationToken: null }
+    );
+
+    if (!user) {
+      return res.status(404).send("User nod found");
+    }
+
+    return res.status(200).send("OK");
   }
 }
 

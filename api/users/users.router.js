@@ -53,6 +53,7 @@ userRouter.patch(
 );
 
 userRouter.get("/", UserController.getUsers);
+userRouter.get("/auth/verify/:verificationToken", UserController.verifyUser);
 userRouter.post(
   "/auth/register",
   upload.single("avatar"),
